@@ -540,6 +540,25 @@ function _exe_is_busybox {
   echo "$is_busybox"
 }
 
+function _import_exported_keyring {
+  local secrets_dir_keys
+  secrets_dir_keys=$(_get_secrets_dir_keys)
+
+  if [[ -e "$secrets_dir_keys/exported_keyring.gpg" ]]; then
+    # Try to import keys from ASCII representation
+    local args=( --homedir "$secrets_dir_keys" --no-permission-warning --import "$secrets_dir_keys/exported_keyring.gpg" )
+    if [[ -z "$_SECRETS_VERBOSE" ]]; then
+      $SECRETS_GPG_COMMAND "${args[@]}" > /dev/null 2>&1 3>&-
+    else
+      $SECRETS_GPG_COMMAND "${args[@]}" 3>&-
+    fi
+    local exit_code=$?
+
+    if [[ "$exit_code" -ne 0 ]]; then
+      _abort "problem importing ASCII keyring with gpg: exit code $exit_code"
+    fi
+  fi
+}
 
 # this is used by just about every command
 function _user_required {
@@ -565,6 +584,12 @@ function _user_required {
   local keys_exist
   keys_exist=$($SECRETS_GPG_COMMAND --homedir "$secrets_dir_keys" --no-permission-warning -n --list-keys 3>&-)
   local exit_code=$?
+  if [[ -z "$keys_exist" && -e "$secrets_dir_keys/exported_keyring.gpg" ]]; then
+    _import_exported_keyring
+
+    keys_exist=$($SECRETS_GPG_COMMAND --homedir "$secrets_dir_keys" --no-permission-warning -n --list-keys 3>&-)
+    exit_code=$?
+  fi
   if [[ -z "$keys_exist" ]]; then
     _abort "$error_message"
   fi

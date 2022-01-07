@@ -138,6 +138,9 @@ function hide {
   local secrets_dir_keys
   secrets_dir_keys=$(_get_secrets_dir_keys)
 
+  # Export ascii keyring
+  $SECRETS_GPG_COMMAND --homedir "$secrets_dir_keys" '--no-permission-warning' --armor --export > "$secrets_dir_keys/exported_keyring.gpg" 3>&-
+
   local counter=0
   for record in "${to_hide[@]}"; do
     local filename

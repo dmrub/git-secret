@@ -37,6 +37,10 @@ function reveal {
 
   _user_required
 
+
+  # Import ascii keyring
+  _import_exported_keyring
+
   # Command logic:
 
   local path_mappings
